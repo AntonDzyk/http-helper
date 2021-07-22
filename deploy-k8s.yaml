@@ -1,0 +1,52 @@
+# deploy on kubernetes service http-helper
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: http-helper
+  labels:
+    app: http-helper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: http-helper
+  template:
+    metadata:
+      labels:
+        app: http-helper
+    spec:
+      containers:
+        - name: http-helper
+          image: kixiro/http-helper:1.0.0
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: http-helper
+spec:
+  selector:
+    app: http-helper
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+apiVersion: extensions/v1beta1 # if you use k8s >= 1.9, change on extensions/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+  labels:
+    app: http-helper
+  name: http-helper
+spec:
+  rules:
+    - host: http-helper.local # change URL
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: http-helper
+              servicePort: 8080
