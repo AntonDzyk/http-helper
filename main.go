@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func codes(w http.ResponseWriter, r *http.Request) {
@@ -25,9 +26,24 @@ func codes(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func timeout(w http.ResponseWriter, r *http.Request) {
+	timeoutValue := r.URL.Query().Get("timeout")
+	tm, err := strconv.Atoi(timeoutValue)
+	if err != nil {
+		sendMessage(w, "timeout is not valid: "+timeoutValue)
+	}
+
+	time.Sleep(time.Duration(tm) * time.Second)
+	sendMessage(w, "OK")
+}
+
 func notExists(w http.ResponseWriter, code string) {
+	sendMessage(w, "<b>This http code does not exist - '"+code+"'</b>")
+}
+
+func sendMessage(w http.ResponseWriter, message string) {
 	w.WriteHeader(http.StatusOK)
-	_, err := w.Write([]byte(`<b>This http code does not exist - '` + code + `'</b>`))
+	_, err := w.Write([]byte(message))
 	if err != nil {
 		log.Printf("error: %s\n", err.Error())
 	}
@@ -45,6 +61,7 @@ func helper(w http.ResponseWriter, _ *http.Request) {
 func main() {
 	http.HandleFunc("/", helper)
 	http.HandleFunc("/http", codes)
+	http.HandleFunc("/wait", timeout)
 	status := http.ListenAndServe(":8080", nil)
 	fmt.Printf("Finish Code: %s\n", status)
 }
